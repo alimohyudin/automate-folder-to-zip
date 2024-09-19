@@ -4,6 +4,7 @@ const axios = require('axios');
 const http = require('http');
 const url = require('url');
 const fs = require('fs');
+const path = require('path');
 const formidable = require('formidable');
 const FolderProcessor = require('./folder-processing.js');
 const rootStructure = require('./RootStructure.js');
