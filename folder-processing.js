@@ -13,6 +13,7 @@ const COMPRESSION_LEVEL = 6;//1 is fastest but low compression, 9 is slowest but
 
 
 const fs = require('fs');
+const path = require('path');
 const archiver = require('archiver');
 class FolderProcessor {
 
@@ -62,7 +63,7 @@ class FolderProcessor {
                 await this.createFolder(folderName)
             }
 
-            fs.copyFile(oldPath, BASE_FOLDER + folderName + '\\' + fileName, (err) => {
+            fs.copyFile(oldPath, path.join(BASE_FOLDER, folderName, fileName), (err) => {
                 if (err) {
                     reject(err);
                 }
@@ -72,7 +73,7 @@ class FolderProcessor {
                         reject(err);
                     }
 
-                    resolve(BASE_FOLDER + folderName + '\\' + fileName);
+                    resolve(BASE_FOLDER + '/'+folderName + '/' + fileName);
                 });
             });
 

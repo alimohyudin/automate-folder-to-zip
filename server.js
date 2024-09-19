@@ -7,8 +7,11 @@ const fs = require('fs');
 const formidable = require('formidable');
 const FolderProcessor = require('./folder-processing.js');
 
+const BASE_URL = 'https://api.q-play.net/';
 
-async function checkAccountExists(ACCOUNT_TOKEN, SECRET_TOKEN) {
+let ACCOUNT_TOKEN = 'cTInxnqprVqj32c9DHesDOkSM7cRURF35e70df4e97a81', SECRET_TOKEN = 'CJKKf52WOJPFbyWi2FAKl6zNqmck3fE266e41906b7ced';
+
+async function checkAccountExists() {
     try {
         console.log('Checking if account exists...');
         console.log(ACCOUNT_TOKEN, SECRET_TOKEN)
@@ -22,7 +25,35 @@ async function checkAccountExists(ACCOUNT_TOKEN, SECRET_TOKEN) {
 
         // Assuming the API returns a list of accounts, you can check if an account exists
         const accounts = response.data.accounts;
-        console.log(accounts)
+        //console.log(accounts)
+
+        console.log('Account exists:', accounts.length > 0);
+
+        //at /folders get list of folders
+        const folders = await axios.get('https://api.q-play.net/folders?accountID=1&page=1&perPage=1000', {
+            headers: {
+                AccountToken: ACCOUNT_TOKEN,
+                SecretToken: SECRET_TOKEN
+            }
+        })
+
+        console.log('Folders:', folders.data);
+        
+        //console.log(folders.data);
+        //at /files get list of files
+
+
+        //creat folder with post request
+        // const folders = await axios.post('https://api.q-play.net/folders', {
+        //     name: 'another test folder'
+        // }, {
+        //     headers: {
+        //         AccountToken: ACCOUNT_TOKEN,
+        //         SecretToken: SECRET_TOKEN
+        //     }
+        // })
+
+        // console.log('Folders:', folders.data);
 
 
         return accounts;
@@ -32,22 +63,69 @@ async function checkAccountExists(ACCOUNT_TOKEN, SECRET_TOKEN) {
     }
 }
 
+async function downloadFilesAndFolders(folderPath = '', downloadDir = 'downloads') {
+    // Make API call to get the folder structure or files
+    try {
+      const response = await axios.get(`${BASE_URL}/${folderPath}`, {
+        headers: {
+            AccountToken: ACCOUNT_TOKEN,
+            SecretToken: SECRET_TOKEN
+        }
+    });
+      const items = response.data; // Assuming response is an array of folders and files
+
+      console.log(`Downloaded ${items.length} items from ${folderPath}`);
+      console
+  
+      for (let item of items) {
+        const itemPath = path.join(downloadDir, folderPath, item.name);
+  
+        if (item.type === 'folder') {
+          // Create the folder locally
+          await fs.ensureDir(itemPath);
+          // Recursively download the contents of the folder
+          await downloadFilesAndFolders(path.join(folderPath, item.name), downloadDir);
+        } else if (item.type === 'file') {
+          // Download and save the file
+          const fileResponse = await axios({
+            url: `${BASE_URL}/${folderPath}/${item.name}`,
+            method: 'GET',
+            responseType: 'stream',
+            headers: {
+                AccountToken: ACCOUNT_TOKEN,
+                SecretToken: SECRET_TOKEN
+            }
+          });
+  
+          const writer = fs.createWriteStream(itemPath);
+          fileResponse.data.pipe(writer);
+  
+          // Wait for the file to finish downloading
+          await new Promise((resolve, reject) => {
+            writer.on('finish', resolve);
+            writer.on('error', reject);
+          });
+        }
+      }
+    } catch (error) {
+      console.error(`Failed to download ${folderPath}:`, error.message);
+    }
+  }
 
 const server = http.createServer(async (req, res) => {
     const parsedUrl = url.parse(req.url, true);
     const pathParts = parsedUrl.pathname.split('/');
-    const accountToken = req.headers['accounttoken'];
-    const secretToken = req.headers['secrettoken'];
+    ACCOUNT_TOKEN = req.headers['accounttoken'];
+    SECRET_TOKEN = req.headers['secrettoken'];
 
-    if (!accountToken || !secretToken) {
+    if (pathParts[1] !== 'download' && (!ACCOUNT_TOKEN || !SECRET_TOKEN)) {
         res.writeHead(401, { 'Content-Type': 'text/plain' });
         res.end('Unauthorized');
         return;
     }
 
-    const accountExists = await checkAccountExists(accountToken, secretToken);
-
-    console.log('Account exists:', accountExists);
+    const accountExists = await checkAccountExists();
+    //await downloadFilesAndFolders();
 
 
     if (req.method === 'POST' && pathParts[1] === 'upload-file' && pathParts[2]) {
@@ -83,7 +161,7 @@ const server = http.createServer(async (req, res) => {
         const folderProcessor = new FolderProcessor();
         folderProcessor.createZipFile(customerId).then(() => {
             res.writeHead(200, { 'Content-Type': 'text/plain' });
-            res.end(`Download Link: http://localhost:${PORT}/download/` + customerId + '.zip');
+            res.end(`Download Link: http://31.222.235.214:${PORT}/download/` + customerId + '.zip');
         })
     } else if (req.method === 'GET' && pathParts[1] === 'download' && pathParts[2]) {
         const customerId = pathParts[2];
@@ -114,6 +192,8 @@ const server = http.createServer(async (req, res) => {
     }
 });
 
-server.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}/`);
-});
+// server.listen(PORT, () => {
+//     console.log(`Server running at http://localhost:${PORT}/`);
+// });
+
+checkAccountExists();
