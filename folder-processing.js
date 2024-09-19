@@ -3,7 +3,7 @@
  */
 const BASE_FOLDER = './BASE_FOLDER/';
 const DOWNLOADS_FOLDER = './DOWNLOADS_FOLDER/';
-const COMPRESSION_LEVEL = 6;//1 is fastest but low compression, 9 is slowest but highest compression. 0 means no compression. Default is 6
+const COMPRESSION_LEVEL = 1;//1 is fastest but low compression, 9 is slowest but highest compression. 0 means no compression. Default is 6
 
 /**End */
 
@@ -13,7 +13,6 @@ const COMPRESSION_LEVEL = 6;//1 is fastest but low compression, 9 is slowest but
 
 
 const fs = require('fs');
-const path = require('path');
 const archiver = require('archiver');
 class FolderProcessor {
 
@@ -26,59 +25,6 @@ class FolderProcessor {
             fs.mkdirSync(DOWNLOADS_FOLDER);
         }
         return DOWNLOADS_FOLDER;
-    }
-    createFolder(folderName) {
-        return new Promise((resolve, reject) => {
-            console.log(`Folder ${folderName} created`)
-            try {
-                try {
-                    fs.mkdirSync(BASE_FOLDER + folderName);
-                    resolve(folderName)
-                } catch (err) {
-                    console.log('1- Base folder doesn\'t exists');
-                    console.log('2- Creating base folder');
-                    fs.mkdirSync(BASE_FOLDER);
-                    fs.mkdirSync(BASE_FOLDER + folderName);
-                    resolve(folderName)
-                }
-
-            } catch (err) {
-                console.log('Error creating folder')
-                //console.log(err)
-                if (err.code === 'EEXIST') {
-                    resolve(folderName)
-                }
-                reject('Error creating folder')
-            }
-
-        });
-    }
-    uploadFile(folderName, fileName, oldPath) {
-
-        return new Promise(async (resolve, reject) => {
-
-
-            if (!fs.existsSync(BASE_FOLDER + folderName)) {
-                //create folder
-                await this.createFolder(folderName)
-            }
-
-            fs.copyFile(oldPath, path.join(BASE_FOLDER, folderName, fileName), (err) => {
-                if (err) {
-                    reject(err);
-                }
-
-                fs.unlink(oldPath, (err) => {
-                    if (err) {
-                        reject(err);
-                    }
-
-                    resolve(BASE_FOLDER + '/'+folderName + '/' + fileName);
-                });
-            });
-
-        });
-
     }
     createZipFile(folderName) {
         this.downloadsFolder();

@@ -1,17 +1,17 @@
 {
-  "name": "automate-folder-to-zip",
+  "name": "automate-folders-to-zip-2",
   "version": "1.0.0",
   "description": "",
-  "main": "folder-processing.js",
+  "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon server.js --ignore ./BASE_FOLDER --ignore ./DOWNLOADS_FOLDER"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "archiver": "^7.0.1",
     "axios": "^1.7.7",
+    "finished": "^1.2.2",
     "formidable": "^3.5.1"
   }
 }
