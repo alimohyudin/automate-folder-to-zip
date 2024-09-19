@@ -14,6 +14,7 @@ This is a simple nodejs server that has two endpoints. One is to upload a file w
 ### Convert Customer Folder and Create Download Link
 
 * Endpoint: `GET /create-zip`
+* Header: `Provide AccessToken & SecretToken`
 * Response: a download link for the customer folder
 
 ## Example
