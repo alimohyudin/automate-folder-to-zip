@@ -133,11 +133,11 @@ async function createStructure(dir, structure) {
 
     // Create folders
     if (structure.folders) {
-        await structure.folders.forEach(async folder => {
+        for (const folder of structure.folders) { // Replace forEach with for...of
             const newDir = path.join(dir, folder.name);
             fs.mkdirSync(newDir, { recursive: true });
             await createStructure(newDir, folder); // Recursive call
-        });
+        }
     }
 }
 
