@@ -8,8 +8,11 @@ const path = require('path');
 const formidable = require('formidable');
 const FolderProcessor = require('./folder-processing.js');
 const rootStructure = require('./RootStructure.js');
+const rootStructureV2 = require('./RootStructureV2.js');
 
 const BASE_URL = 'https://api.q-play.net/';
+
+const ALLOWED_IP = '78.153.177.196';
 
 
 let ACCOUNT_TOKEN = '', SECRET_TOKEN = '';
@@ -43,7 +46,19 @@ const server = http.createServer(async (req, res) => {
     const parsedUrl = url.parse(req.url, true);
     const pathParts = parsedUrl.pathname.split('/');
     ACCOUNT_TOKEN = req.headers['accounttoken'];
-    SECRET_TOKEN = req.headers['secrettoken'];
+    SECRET_TOKEN = req.headers['secrettoken'];    
+    V2_CLIENT_ID = req.headers['v2-client-id'];
+    v2_CLIENT_SECRET = req.headers['v2-client-secret'];
+    const remoteIP = req.socket.remoteAddress;
+
+    // Normalize IPv6 loopback format
+    const normalizedIP = remoteIP === '::1' ? '127.0.0.1' : remoteIP.replace('::ffff:', '');
+    if (normalizedIP !== ALLOWED_IP) {
+        res.writeHead(403, { 'Content-Type': 'text/plain' });
+        res.end('Access denied');
+        return;
+    }
+
 
     if (pathParts[1] !== 'download' && (!ACCOUNT_TOKEN || !SECRET_TOKEN)) {
         res.writeHead(401, { 'Content-Type': 'text/plain' });
@@ -75,6 +90,16 @@ const server = http.createServer(async (req, res) => {
         })
         // res.writeHead(404, { 'Content-Type': 'text/plain' });
         // res.end('Not Found');
+    } else if (req.method === 'GET' && pathParts[1] === 'v1-folder-to-v2') {
+            await rootStructureV2(ACCOUNT_TOKEN, SECRET_TOKEN, V2_CLIENT_ID, v2_CLIENT_SECRET);
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({
+                success: true,
+                message: 'Data published to v2 API',
+            }));
+    
+            // res.writeHead(404, { 'Content-Type': 'text/plain' });
+            // res.end('Not Found');
     } else if (req.method === 'GET' && pathParts[1] === 'download' && pathParts[2]) {
         const customerId = pathParts[2];
         const folderProcessor = new FolderProcessor();
